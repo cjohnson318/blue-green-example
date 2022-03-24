@@ -1,0 +1,50 @@
+version: '3'
+ 
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+      args:
+        COLOR: ${COLOR}
+    ports:
+      - "80:80"
+      - "8000:8000"
+    depends_on:
+      - blue
+      - green
+  redis:
+    container_name: redis
+    image: redis:alpine
+  blue:
+    container_name: blue
+    build:
+      context: .
+      args:
+        SRCROOT: backend/dist/blue/src
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/dist/blue/src:/usr/src/app
+    command: '/bin/bash -c "(python3 manage.py collectstatic --no-input &)
+      && (celery --app config worker --pool=gevent --loglevel=INFO &)
+      && (gunicorn --bind 0.0.0.0:8001 --workers 2 --timeout 90 --worker-class gevent config.wsgi:application)"'
+    depends_on:
+      - redis
+  green:
+    container_name: green
+    build:
+      context: .
+      args:
+        SRCROOT: backend/dist/green/src
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./backend/dist/green/src:/usr/src/app
+    command: '/bin/bash -c "(python3 manage.py collectstatic --no-input &)
+      && (celery --app config worker --pool=gevent --loglevel=INFO &)
+      && (gunicorn --bind 0.0.0.0:8002 --workers 2 --timeout 90 --worker-class gevent config.wsgi:application)"'
+    depends_on:
+      - redis
+

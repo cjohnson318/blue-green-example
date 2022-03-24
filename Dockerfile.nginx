@@ -1,0 +1,8 @@
+FROM nginx:alpine
+
+ARG COLOR
+
+RUN mkdir /var/www
+
+COPY frontend/dist/ /var/www/ 
+COPY nginx/nginx.${COLOR} /etc/nginx/nginx.conf
